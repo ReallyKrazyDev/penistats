@@ -23,30 +23,45 @@ Settings file may contain 3 parts : "device", "schedule", "mqtts"
 Describes the device.
 On Raspberry PI it is optional.
 
-"group" : group containing the device, 'penistats' if missing, will be used to create MQTT topic
-"serial" : serial of the device, must be unique accross group's devices, will be used to create MQTT topic
-"model" : model of the device
-"manufacturer" : manufacturer of the device
-"version" : software version of the device
+```
+"device": {
+  "group" : group containing the device, 'penistats' if missing, will be used to create MQTT topic
+  "serial" : serial of the device, must be unique accross group's devices, will be used to create MQTT topic
+  "model" : model of the device
+  "manufacturer" : manufacturer of the device
+  "version" : software version of the device
+}
+```
 
 ### schedule
 
 Scheduler, if missing then it will run only once
 
-"every"
-  "minutes" : read and send values every X minutes
+```
+"schedule": {
+  "every": {
+    "minutes" : read and send values every X minutes
+  }
+}
+```
 
 ### "mqtts"
 
 Array of MQTT destination(s)
 
 For each MQTT we have :
-"hostname": hostname of the broker,
-"port": port of the broker,
-"username": username (if needed),
-"password": password (if needed),
-"caCerts": path to broker's CA certificates (if needed),
-"isHA": if true then use Home Assistant format
+```
+"mqtts": [
+  {
+    "hostname": hostname of the broker,
+    "port": port of the broker,
+    "username": username (if needed),
+    "password": password (if needed),
+    "caCerts": path to broker's CA certificates (if needed),
+    "isHA": if true then use Home Assistant format
+  }
+]
+```
 
 ### Full content
 ```
@@ -82,6 +97,6 @@ For each MQTT we have :
 
 Let's assume penistats is located in /opt/penistats
 
-run ```sudo crontab -e```
-add ```@reboot         /usr/bin/python3 /opt/pistats/pistats.py --set /opt/pistats/pistats.conf```
-save and reboot 
+1) run ```sudo crontab -e```
+2) add ```@reboot         /usr/bin/python3 /opt/pistats/pistats.py --set /opt/pistats/pistats.conf```
+3) save and reboot 
