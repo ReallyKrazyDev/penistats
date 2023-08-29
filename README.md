@@ -21,15 +21,16 @@ Settings file may contain 3 parts : "device", "schedule", "mqtts"
 ### "device"
 
 Describes the device.
-On Raspberry PI it is optional.
+On Raspberry PI OS it is fully optional, all data will be retrieved from system settings.
 
 ```
 "device": {
-  "group" : group containing the device, 'penistats' if missing, will be used to create MQTT topic
-  "serial" : serial of the device, must be unique accross group's devices, will be used to create MQTT topic
-  "model" : model of the device
+  "group" : [mandatory] group containing the device, 'penistats' if missing, will be used to create MQTT topic
+  "serial" : [mandatory] serial of the device, must be unique accross group's devices, will be used to create MQTT topic
+  "model" : [mandatory] model of the device
   "manufacturer" : manufacturer of the device
   "version" : software version of the device
+  "name": [mandatory] user-firendly name of the device
 }
 ```
 
@@ -53,8 +54,8 @@ For each MQTT we have :
 ```
 "mqtts": [
   {
-    "hostname": hostname of the broker,
-    "port": port of the broker,
+    "hostname": [mandatory] hostname of the broker,
+    "port": [mandatory] port of the broker,
     "username": username (if needed),
     "password": password (if needed),
     "caCerts": path to broker's CA certificates (if needed),
@@ -71,7 +72,8 @@ For each MQTT we have :
     "serial": "...",
     "model": "...",
     "manufacturer": "...",
-    "version": "..."
+    "version": "...",
+    "name": "..."
   },
   "schedule": {
     "every": {
@@ -98,5 +100,5 @@ For each MQTT we have :
 Let's assume penistats is located in /opt/penistats
 
 1) run ```sudo crontab -e```
-2) add ```@reboot /usr/bin/python3 /opt/penistats/pistats.py --set /opt/penistats/penistats.conf```
+2) add ```@reboot /usr/bin/python3 /opt/penistats/penistats.py --set /opt/penistats/penistats.conf```
 3) save and reboot 
