@@ -98,5 +98,5 @@ For each MQTT we have :
 Let's assume penistats is located in /opt/penistats
 
 1) run ```sudo crontab -e```
-2) add ```@reboot         /usr/bin/python3 /opt/pistats/pistats.py --set /opt/pistats/pistats.conf```
+2) add ```@reboot /usr/bin/python3 /opt/penistats/pistats.py --set /opt/penistats/penistats.conf```
 3) save and reboot 
