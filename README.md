@@ -5,7 +5,7 @@ This software is dedicated to retrieve some system data (CPU temp and fequency, 
 
 Currently only MQTT is accepted as host
 
-It is tested on a Raspberry Pi 3B running Raspberry Pi OS, and data may be sent in Home Assistant format
+It is tested on a Raspberry Pi 3B running Raspberry Pi OS, and data may be sent in Home Assistant format (it is able to declare itself on Home Assistant)
 
 It should work on regular Debian-based Linux (with some limitations) and with some changes on any Linux
 
