@@ -92,6 +92,26 @@ For each MQTT we have :
   ]
 }
 ```
+### Raspberry Pi typical content including scheduler
+```
+{
+  "schedule": {
+    "every": {
+      "minutes": 10
+    }
+  },
+  "mqtts": [
+    {
+      "hostname": "...",
+      "port": 1883,
+      "username": "...",
+      "password": "...",
+      "caCerts": "...",
+      "isHA": true
+    }
+  ]
+}
+```
 
 ## Suggestion to run on boot
 
