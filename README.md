@@ -10,7 +10,7 @@ It is tested on a Raspberry Pi 3B running Raspberry Pi OS, and data may be sent 
 It should work on regular Debian-based Linux (with some limitations) and with some changes on any Linux
 
 ## Dependencies
-Run those commands before starting penistats
+Run those commands before starting penistatsfor the first time
 ```
 pip install schedule
 pip install paho-mqtt
