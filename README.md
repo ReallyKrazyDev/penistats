@@ -41,7 +41,7 @@ On Raspberry PI OS it is fully optional, all data will be retrieved from system 
 }
 ```
 
-### schedule
+### "schedule"
 
 Scheduler, if missing then it will run only once
 
