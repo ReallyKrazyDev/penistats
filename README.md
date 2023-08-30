@@ -1,4 +1,4 @@
-# PeniStats
+# Penistats
 Penguin Statistics
 
 This software is dedicated to retrieve some system data (CPU temp and fequency, available memory, ...) and send them to local/remote host(s)
