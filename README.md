@@ -30,7 +30,7 @@ On Raspberry PI OS it is fully optional, all data will be retrieved from system 
   "model" : [mandatory] model of the device
   "manufacturer" : manufacturer of the device
   "version" : software version of the device
-  "name": [mandatory] user-firendly name of the device
+  "name": [mandatory] user-friendly name of the device
 }
 ```
 
