@@ -9,6 +9,13 @@ It is tested on a Raspberry Pi 3B running Raspberry Pi OS, and data may be sent 
 
 It should work on regular Debian-based Linux (with some limitations) and with some changes on any Linux
 
+## Dependencies
+Run those commands before starting penistats
+```
+pip install schedule
+pip install paho-mqtt
+```
+
 ## Settings file
 
 If no settings file is provided then penistats.conf will be used.
@@ -117,7 +124,9 @@ For each MQTT we have :
 
 ### Debian-based
 
-Let's assume penistats is located in /opt/penistats
+Be careful, this solution will make python and penistats run as root, it is not recommended for a production environment.
+
+Let's assume that penistats files are located in /opt/penistats...
 
 1) run ```sudo crontab -e```
 2) add ```@reboot /usr/bin/python3 /opt/penistats/penistats.py --set /opt/penistats/penistats.conf```
