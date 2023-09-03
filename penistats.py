@@ -57,11 +57,44 @@ class Values:
   def __init__(self, ):
     self.cpuTempC:float = None
     self.cpuFreqGHz:float = None
+    self.cpuLoadAvg1MnPct:int = None
+    self.cpuLoadAvg5MnPct:int = None
+    self.cpuLoadAvg10MnPct:int = None
     self.memTotalKB:int = None
     self.memFreeKB:int = None
+    self.memFreePct:int = None
     self.memAvailKB:int = None
     self.swapTotalKB:int = None
     self.swapFreeKB:int = None
+    self.swapFreePct:int = None
+
+  def toDict(self):
+    res:dict = {}
+    if self.cpuTempC is not None:
+      res['cpuTempC'] = self.cpuTempC
+    if self.cpuFreqGHz is not None:
+      res['cpuFreqGHz'] = self.cpuFreqGHz
+    if self.cpuLoadAvg1MnPct is not None:
+      res['cpuLoadAvg1MnPct'] = self.cpuLoadAvg1MnPct
+    if self.cpuLoadAvg5MnPct is not None:
+      res['cpuLoadAvg5MnPct'] = self.cpuLoadAvg5MnPct
+    if self.cpuLoadAvg10MnPct is not None:
+      res['cpuLoadAvg10MnPct'] = self.cpuLoadAvg10MnPct
+    if self.memTotalKB is not None:
+      res['memTotalKB'] = self.memTotalKB
+    if self.memFreeKB is not None:
+      res['memFreeKB'] = self.memFreeKB
+    if self.memFreePct is not None:
+      res['memFreePct'] = self.memFreePct
+    if self.memAvailKB is not None:
+      res['memAvailKB'] = self.memAvailKB
+    if self.swapTotalKB is not None:
+      res['swapTotalKB'] = self.swapTotalKB
+    if self.swapFreeKB is not None:
+      res['swapFreeKB'] = self.swapFreeKB
+    if self.swapFreePct is not None:
+      res['swapFreePct'] = self.swapFreePct
+    return res
 
 class DeviceSettings:
   def __init__(self, settingsDict:dict=None):
@@ -200,10 +233,11 @@ class Settings:
     return True
 
 class DeclareValue:
-  def __init__(self, name:str, unit:str, tag:str):
-    self.name = name.strip() if name is not None else None
-    self.unit = unit.strip() if unit is not None else None
-    self.tag = tag.strip() if tag is not None else None
+  def __init__(self, name:str, unit:str, tag:str, icon:str=None):
+    self.name:str = name.strip() if name is not None else None
+    self.unit:str = unit.strip() if unit is not None else None
+    self.tag:str = tag.strip() if tag is not None else None
+    self.icon:str = icon.strip() if icon is not None else None
 
   def toDict(self) -> dict:
     res:dict = {}
@@ -213,6 +247,8 @@ class DeclareValue:
       res['unit'] = self.unit
     if not isStringEmpty(self.tag):
       res['tag'] = self.tag
+    if not isStringEmpty(self.icon):
+      res['icon'] = self.icon
     return res
 
 class DeclareHADevice:
@@ -240,15 +276,15 @@ class DeclareHADevice:
 class DeclareHAValue:
   def __init__(self, deviceSettings:DeviceSettings, declareValue:DeclareValue):
     topic:str = buildValuesTopic(deviceSettings.group, deviceSettings.serial)
-    id:str = buildBaseId(deviceSettings.group, deviceSettings.serial)
 
-    icon:str = None
-    if declareValue.unit == '°C' or declareValue.unit == '°F':
-      icon = 'mdi:thermometer'
-    elif declareValue.unit == 'kB':
-      icon = 'mdi:memory'
-    else:
-      icon = 'mdi:eye'
+    icon:str = declareValue.icon
+    if isStringEmpty(icon):
+      if declareValue.unit == '°C' or declareValue.unit == '°F':
+        icon = 'mdi:thermometer'
+      elif declareValue.unit == 'kB':
+        icon = 'mdi:memory'
+      else:
+        icon = 'mdi:eye'
 
     self.device:DeclareHADevice = DeclareHADevice(deviceSettings)
     self.enabled_by_default:bool = True
@@ -258,7 +294,7 @@ class DeclareHAValue:
     self.name = declareValue.name
     self.state_class = 'measurement'
     self.state_topic = topic
-    self.unique_id = id + '_' + declareValue.tag
+    self.unique_id = deviceSettings.serial + '_' + declareValue.tag + '_' + deviceSettings.group
     self.unit_of_measurement = declareValue.unit
     self.value_template = '{{ ' + 'value_json.{0}'.format(declareValue.tag) + ' }}'
 
@@ -415,6 +451,24 @@ def readValues() -> Values:
     pass
 
   try:
+    avgs = None
+    with open('/proc/loadavg', 'r') as file:
+      line = file.read().strip()
+      avgs = line.split(' ')
+      if len(avgs) >= 3:
+        values.cpuLoadAvg1MnPct = int(float(avgs[0]) * 100)
+        if values.cpuLoadAvg1MnPct < 0 or values.cpuLoadAvg1MnPct > 100:
+          values.cpuLoadAvg1MnPct = None
+        values.cpuLoadAvg5MnPct = int(float(avgs[1]) * 100)
+        if values.cpuLoadAvg5MnPct < 0 or values.cpuLoadAvg5MnPct > 100:
+          values.cpuLoadAvg5MnPct = None
+        values.cpuLoadAvg10MnPct = int(float(avgs[2]) * 100)
+        if values.cpuLoadAvg10MnPct < 0 or values.cpuLoadAvg10MnPct > 100:
+          values.cpuLoadAvg10MnPct = None
+  except:
+    pass
+
+  try:
     with open('/proc/meminfo', 'r') as file:
       for line in file:
         line = line.strip()
@@ -432,15 +486,21 @@ def readValues() -> Values:
             values.swapTotalKB = int(value)
           elif lcline.startswith('swapfree'):
             values.swapFreeKB = int(value)
+    if values.memTotalKB is not None and values.memTotalKB > 0:
+      if values.memFreeKB is not None:
+        values.memFreePct = int(values.memFreeKB*100/values.memTotalKB)
+    if values.swapTotalKB is not None and values.swapTotalKB > 0:
+      if values.swapFreeKB is not None:
+        values.swapFreePct = int(values.swapFreeKB*100/values.swapTotalKB)
   except:
     pass
 
   return values
 
 def dispValues(values:Values):
-  print('cpu temp={0:3.2f}°C freq={1:0.1f}MHz'.format(values.cpuTempC, values.cpuFreqGHz))
-  print('mem total={0}KB free={1}KB avail={2}KB'.format(values.memTotalKB, values.memFreeKB, values.memAvailKB))
-  print('swap total={0}KB free={1}KB'.format(values.swapTotalKB, values.swapFreeKB))
+  print('cpu temp={0:3.2f}°C freq={1:0.1f}MHz load={2}%/{3}%/{4}%'.format(values.cpuTempC, values.cpuFreqGHz, values.cpuLoadAvg1MnPct, values.cpuLoadAvg5MnPct, values.cpuLoadAvg10MnPct))
+  print('mem total={0}KB free={1}KB/{2}% avail={3}KB'.format(values.memTotalKB, values.memFreeKB, values.memFreePct, values.memAvailKB))
+  print('swap total={0}KB free={1}KB/{2}%'.format(values.swapTotalKB, values.swapFreeKB, values.swapFreePct))
 
 def declareValues2HAMqtt(client:MqttClient.Client, deviceSettings:DeviceSettings, declareValues:[DeclareValue]):
   topic:str = None
@@ -448,6 +508,7 @@ def declareValues2HAMqtt(client:MqttClient.Client, deviceSettings:DeviceSettings
   declareHAValue:DeclareHAValue = None
   for declareValue in declareValues:
     topic = 'homeassistant/sensor/{0}/{1}/config'.format(deviceSettings.serial, declareValue.tag)
+    #topic = 'fakedecl/sensor/{0}/{1}/config'.format(deviceSettings.serial, declareValue.tag)
     declareHAValue = DeclareHAValue(deviceSettings, declareValue)
     payload = json.dumps(declareHAValue, cls=PeniJsonEncoder)
     client.publish(topic, payload, qos=0, retain=True)
@@ -498,11 +559,16 @@ def declareValues(settings:Settings) -> bool:
   declareValues:[DeclareValue] = []
   declareValues.append(DeclareValue('cpu temperature', '°C', 'cpuTempC'))
   declareValues.append(DeclareValue('cpu frequency', 'GHz', 'cpuFreqGHz'))
+  declareValues.append(DeclareValue('cpu load average 1mn', '%', 'cpuLoadAvg1MnPct'))
+  declareValues.append(DeclareValue('cpu load average 5mn', '%', 'cpuLoadAvg5MnPct'))
+  declareValues.append(DeclareValue('cpu load average 10mn', '%', 'cpuLoadAvg10MnPct'))
   declareValues.append(DeclareValue('memory total', 'kB', 'memTotalKB'))
   declareValues.append(DeclareValue('memory free', 'kB', 'memFreeKB'))
+  declareValues.append(DeclareValue('memory free (%)', '%', 'memFreePct'))
   declareValues.append(DeclareValue('memory available', 'kB', 'memAvailKB'))
   declareValues.append(DeclareValue('swap total', 'kB', 'swapTotalKB'))
   declareValues.append(DeclareValue('swap free', 'kB', 'swapFreeKB'))
+  declareValues.append(DeclareValue('swap free (%)', '%', 'swapFreePct'))
 
   wait:bool = False
   for mqtt in settings.mqtts:
