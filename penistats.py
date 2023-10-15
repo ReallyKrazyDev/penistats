@@ -13,45 +13,27 @@
 # Dependencies
 #
 # pip install schedule
-# pip install paho-mqtt
+# + pyhelp's dependencies
+
+
+import sys
+sys.path.insert(1, '../pyhelp/')
 
 
 import os
 import json
-import uuid
 import time
 import socket
 import argparse
 import schedule
 
-from json import JSONEncoder
-from paho.mqtt import client as MqttClient
-
-
-#
-# Tools
-#
-
-def isStringEmpty(string:str) -> bool:
-  return string is None or len(string.strip()) <= 0
-
-def buildBaseId(group:str, serial:str) -> str:
-  return '{0}_{1}'.format(group, serial)
-
-def buildValuesTopic(group:str, serial:str) -> str:
-  return '{0}/{1}'.format(group, serial)
+from misc import *
+from mqtt import *
 
 
 #
 # Classes
 #
-
-class PeniJsonEncoder(JSONEncoder):
-  def default(self, o):
-    try:
-      return o.toDict()
-    except:
-      return o.__dict__
 
 class Values:
   def __init__(self, ):
@@ -96,53 +78,6 @@ class Values:
       res['swapFreePct'] = self.swapFreePct
     return res
 
-class DeviceSettings:
-  def __init__(self, settingsDict:dict=None):
-    self.group:str = None
-    self.serial:str = None
-    self.manufacturer:str = None
-    self.model:str = None
-    self.version:str = None
-    self.name:str = None
-
-    if settingsDict is not None:
-      if 'group' in settingsDict:
-        self.group = settingsDict['group']
-      if 'serial' in settingsDict:
-        self.serial = settingsDict['serial']
-      if 'manufacturer' in settingsDict:
-        self.manufacturer = settingsDict['manufacturer']
-      if 'model' in settingsDict:
-        self.serial = settingsDict['model']
-      if 'version' in settingsDict:
-        self.version = settingsDict['version']
-      if 'name' in settingsDict:
-        self.name = settingsDict['name']
-
-  def isSet(self) -> bool:
-    return ( \
-      not isStringEmpty(self.group) and \
-      not isStringEmpty(self.serial) and \
-      not isStringEmpty(self.model) and \
-      not isStringEmpty(self.name) \
-    )
-
-  def toDict(self) -> dict:
-    res:dict = {}
-    if not isStringEmpty(self.group):
-      res['group'] = self.group
-    if not isStringEmpty(self.serial):
-      res['serial'] = self.serial
-    if not isStringEmpty(self.manufacturer):
-      res['manufacturer'] = self.manufacturer
-    if not isStringEmpty(self.model):
-      res['model'] = self.model
-    if not isStringEmpty(self.version):
-      res['version'] = self.version
-    if not isStringEmpty(self.name):
-      res['name'] = self.name
-    return res
-
 class ScheduleEverySettings:
   def __init__(self, settingsDict:dict=None):
     self.minutes = None
@@ -164,41 +99,6 @@ class ScheduleSettings:
 
   def isSet(self) -> bool:
     return ( self.every is not None and self.every.isSet() )
-
-class MqttSettings:
-  def __init__(self, settingsDict:dict=None):
-    self.hostname:str = None;
-    self.port:int = None
-    self.topic:str = None
-    self.clientId:str = None
-    self.username:str = None
-    self.password:str = None
-    self.caCertsPath:str = None
-    self.isHA:bool = None
-
-    if settingsDict is not None:
-      if 'hostname' in settingsDict:
-        self.hostname = settingsDict['hostname']
-      if 'port' in settingsDict:
-        self.port = int(settingsDict['port'])
-      if 'topic' in settingsDict:
-        self.topic = settingsDict['topic']
-      if 'clientId' in settingsDict:
-        self.clientId = settingsDict['clientId']
-      if 'username' in settingsDict:
-        self.username = settingsDict['username']
-      if 'password' in settingsDict:
-        self.password = settingsDict['password']
-      if 'caCertsPath' in settingsDict:
-        self.caCertsPath = settingsDict['caCertsPath']
-      if 'isHA' in settingsDict:
-        self.isHA = bool(settingsDict['isHA'])
-
-    if isStringEmpty(self.clientId):
-      self.clientId = str(uuid.uuid4())
-
-  def isSet(self) -> bool:
-    return ( self.hostname is not None and self.port is not None )
 
 class Settings:
   def __init__(self, settingsDict:dict=None):
@@ -232,110 +132,10 @@ class Settings:
 
     return True
 
-class DeclareValue:
-  def __init__(self, name:str, unit:str, tag:str, icon:str=None):
-    self.name:str = name.strip() if name is not None else None
-    self.unit:str = unit.strip() if unit is not None else None
-    self.tag:str = tag.strip() if tag is not None else None
-    self.icon:str = icon.strip() if icon is not None else None
-
-  def toDict(self) -> dict:
-    res:dict = {}
-    if not isStringEmpty(self.name):
-      res['name'] = self.name
-    if not isStringEmpty(self.unit):
-      res['unit'] = self.unit
-    if not isStringEmpty(self.tag):
-      res['tag'] = self.tag
-    if not isStringEmpty(self.icon):
-      res['icon'] = self.icon
-    return res
-
-class DeclareHADevice:
-  def __init__(self, deviceSettings:DeviceSettings):
-    self.identifiers:[str] = [buildBaseId(deviceSettings.group, deviceSettings.serial)]
-    self.manufacturer:str = deviceSettings.manufacturer
-    self.model:str = deviceSettings.model
-    self.name:str = deviceSettings.name
-    self.sw_version:str = deviceSettings.version
-
-  def toDict(self) -> dict:
-    res:dict = {}
-    if self.identifiers is not None:
-      res['identifiers'] = self.identifiers
-    if not isStringEmpty(self.manufacturer):
-      res['manufacturer'] = self.manufacturer
-    if not isStringEmpty(self.model):
-      res['model'] = self.model
-    if not isStringEmpty(self.name):
-      res['name'] = self.name
-    if not isStringEmpty(self.sw_version):
-      res['sw_version'] = self.sw_version
-    return res
-
-class DeclareHAValue:
-  def __init__(self, deviceSettings:DeviceSettings, declareValue:DeclareValue):
-    topic:str = buildValuesTopic(deviceSettings.group, deviceSettings.serial)
-
-    icon:str = declareValue.icon
-    if isStringEmpty(icon):
-      if declareValue.unit == '°C' or declareValue.unit == '°F':
-        icon = 'mdi:thermometer'
-      elif declareValue.unit == 'kB':
-        icon = 'mdi:memory'
-      else:
-        icon = 'mdi:eye'
-
-    self.device:DeclareHADevice = DeclareHADevice(deviceSettings)
-    self.enabled_by_default:bool = True
-    self.entity_category:str = 'diagnostic'
-    self.icon:str = icon
-    self.json_attributes_topic = topic
-    self.name = declareValue.name
-    self.state_class = 'measurement'
-    self.state_topic = topic
-    self.unique_id = deviceSettings.serial + '_' + declareValue.tag + '_' + deviceSettings.group
-    self.unit_of_measurement = declareValue.unit
-    self.value_template = '{{ ' + 'value_json.{0}'.format(declareValue.tag) + ' }}'
-
-  def toDict(self) -> dict:
-    res:dict = {}
-    if self.device is not None:
-      res['device'] = self.device.toDict()
-    if self.enabled_by_default is not None:
-      res['enabled_by_default'] = self.enabled_by_default
-    if not isStringEmpty(self.entity_category):
-      res['entity_category'] = self.entity_category
-    if not isStringEmpty(self.icon):
-      res['icon'] = self.icon
-    if not isStringEmpty(self.json_attributes_topic):
-      res['json_attributes_topic'] = self.json_attributes_topic
-    if not isStringEmpty(self.name):
-      res['name'] = self.name
-    if not isStringEmpty(self.state_class):
-      res['state_class'] = self.state_class
-    if not isStringEmpty(self.state_topic):
-      res['state_topic'] = self.state_topic
-    if not isStringEmpty(self.unique_id):
-      res['unique_id'] = self.unique_id
-    if not isStringEmpty(self.unit_of_measurement):
-      res['unit_of_measurement'] = self.unit_of_measurement
-    if not isStringEmpty(self.value_template):
-      res['value_template'] = self.value_template
-    return res
-
 
 #
 #  Process methods
 #
-
-def buildMqttClient(settings:MqttSettings) -> MqttClient.Client :
-  client = MqttClient.Client(settings.clientId)
-  if settings.username is not None and len(settings.username.strip()) > 0:
-    client.username_pw_set(settings.username, settings.password)
-  if settings.caCertsPath is not None and len(settings.caCertsPath.strip()) > 0:
-    client.tls_set(ca_certs=settings.caCertsPath)
-  return client
 
 def readSettings(filePath:str) -> Settings:
   try:
@@ -502,51 +302,6 @@ def dispValues(values:Values):
   print('mem total={0}KB free={1}KB/{2}% avail={3}KB'.format(values.memTotalKB, values.memFreeKB, values.memFreePct, values.memAvailKB))
   print('swap total={0}KB free={1}KB/{2}%'.format(values.swapTotalKB, values.swapFreeKB, values.swapFreePct))
 
-def declareValues2HAMqtt(client:MqttClient.Client, deviceSettings:DeviceSettings, declareValues:[DeclareValue]):
-  topic:str = None
-  payload:str = None
-  declareHAValue:DeclareHAValue = None
-  for declareValue in declareValues:
-    topic = 'homeassistant/sensor/{0}/{1}/config'.format(deviceSettings.serial, declareValue.tag)
-    #topic = 'fakedecl/sensor/{0}/{1}/config'.format(deviceSettings.serial, declareValue.tag)
-    declareHAValue = DeclareHAValue(deviceSettings, declareValue)
-    payload = json.dumps(declareHAValue, cls=PeniJsonEncoder)
-    client.publish(topic, payload, qos=0, retain=True)
-
-def declareValues2DefaultMqtt(client:MqttClient.Client, deviceSettings:DeviceSettings, declareValues:[DeclareValue]):
-  topic:str = buildValuesTopic(deviceSettings.group, deviceSettings.serial)
-  payload:str = None
-
-  payload = json.dumps(deviceSettings, cls=PeniJsonEncoder)
-  client.publish('declare/{0}/device'.format(topic), payload, qos=0, retain=True)
-
-  for declareValue in declareValues:
-    payload = json.dumps(declareValue, cls=PeniJsonEncoder)
-    client.publish('declare/{0}/value/{1}'.format(topic, declareValue.tag), payload, qos=0, retain=True)
-
-def declareValues2Mqtt(deviceSettings:DeviceSettings, mqttSettings:MqttSettings, declareValues:[DeclareValue]) -> bool:
-  def onDeclareMqttConnect(client, userdata, flags, rc):
-    if rc == 0:
-      try:
-        if mqttSettings.isHA:
-          declareValues2HAMqtt(client, deviceSettings, declareValues)
-        else:
-          declareValues2DefaultMqtt(client, deviceSettings, declareValues)
-      except Exception as excp:
-        print('Failed to send declare : ' + str(excp))
-      try:
-        client.loop_stop()
-        client.disconnect()
-      except:
-        pass
-    else:
-      print('Failed to connect for declare, return code {0}'.format(rc))
-  client = buildMqttClient(mqttSettings)
-  client.on_connect = onDeclareMqttConnect
-  client.loop_start()
-  client.connect(mqttSettings.hostname, mqttSettings.port)
-  return True
-
 def declareValues(settings:Settings) -> bool:
   global declareTstamp
 
@@ -579,28 +334,6 @@ def declareValues(settings:Settings) -> bool:
   if wait:
     time.sleep(5)
 
-  return True
-
-def sendValues2Mqtt(values:Values, deviceSettings:DeviceSettings, mqttSettings:MqttSettings) -> bool:
-  if not settings.isSet():
-    return False
-  def onValuesMqttConnect(client, userdata, flags, rc):
-    if rc == 0:
-      try:
-        client.publish(buildValuesTopic(deviceSettings.group, deviceSettings.serial), json.dumps(values, cls=PeniJsonEncoder))
-      except Exception as excp:
-        print('Failed to send values : ' + str(excp))
-      try:
-        client.loop_stop()
-        client.disconnect()
-      except:
-        pass
-    else:
-      print('Failed to connect for send, return code {0}'.format(rc))
-  client = buildMqttClient(mqttSettings)
-  client.on_connect = onValuesMqttConnect
-  client.loop_start()
-  client.connect(mqttSettings.hostname, mqttSettings.port)
   return True
 
 def sendValues(values:Values, settings:Settings) -> bool:

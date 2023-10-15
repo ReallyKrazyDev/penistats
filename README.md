@@ -1,4 +1,5 @@
 # Penistats
+
 Penguin Statistics
 
 This software is dedicated to retrieve some system data (CPU temp and fequency, available memory, ...) and send them to local/remote host(s)
@@ -9,12 +10,16 @@ It is tested on a Raspberry Pi 3B running Raspberry Pi OS, and data may be sent 
 
 It should work on regular Debian-based Linux (with some limitations) and with some changes on any Linux
 
+
 ## Dependencies
-Run those commands before starting penistatsfor the first time
+
+Run those commands before starting penistats for the first time
 ```
 pip install schedule
-pip install paho-mqtt
 ```
+
+You also need pyhelp (https://github.com/ReallyKrazyDev/pyhelp.git) to build and execute penistats.
+
 
 ## Settings file
 
@@ -76,6 +81,7 @@ For each MQTT we have :
 {
   "device": {
     "group": "...",
+
     "serial": "...",
     "model": "...",
     "manufacturer": "...",
