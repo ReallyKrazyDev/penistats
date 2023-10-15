@@ -81,7 +81,6 @@ For each MQTT we have :
 {
   "device": {
     "group": "...",
-
     "serial": "...",
     "model": "...",
     "manufacturer": "...",

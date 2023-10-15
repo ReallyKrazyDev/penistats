@@ -298,9 +298,21 @@ def readValues() -> Values:
   return values
 
 def dispValues(values:Values):
-  print('cpu temp={0:3.2f}°C freq={1:0.1f}MHz load={2}%/{3}%/{4}%'.format(values.cpuTempC, values.cpuFreqGHz, values.cpuLoadAvg1MnPct, values.cpuLoadAvg5MnPct, values.cpuLoadAvg10MnPct))
-  print('mem total={0}KB free={1}KB/{2}% avail={3}KB'.format(values.memTotalKB, values.memFreeKB, values.memFreePct, values.memAvailKB))
-  print('swap total={0}KB free={1}KB/{2}%'.format(values.swapTotalKB, values.swapFreeKB, values.swapFreePct))
+  print('cpu temp={0:3.2f}°C freq={1:0.1f}MHz load={2}%/{3}%/{4}%'.format( \
+    values.cpuTempC if values.cpuTempC is not None else -1, \
+    values.cpuFreqGHz if values.cpuFreqGHz is not None else -1, \
+    values.cpuLoadAvg1MnPct if values.cpuLoadAvg1MnPct is not None else -1, \
+    values.cpuLoadAvg5MnPct if values.cpuLoadAvg5MnPct is not None else -1, \
+    values.cpuLoadAvg10MnPct if values.cpuLoadAvg10MnPct is not None else -1))
+  print('mem total={0}KB free={1}KB/{2}% avail={3}KB'.format( \
+    values.memTotalKB if values.memTotalKB is not None else -1, \
+    values.memFreeKB if values.memFreeKB is not None else -1, \
+    values.memFreePct if values.memFreePct is not None else -1, \
+    values.memAvailKB if values.memAvailKB is not None else -1))
+  print('swap total={0}KB free={1}KB/{2}%'.format( \
+    values.swapTotalKB if values.swapTotalKB is not None else -1, \
+    values.swapFreeKB if values.swapFreeKB is not None else -1, \
+    values.swapFreePct if values.swapFreePct is not None else -1))
 
 def declareValues(settings:Settings) -> bool:
   global declareTstamp
@@ -336,19 +348,18 @@ def declareValues(settings:Settings) -> bool:
 
   return True
 
-def sendValues(values:Values, settings:Settings) -> bool:
+def sendValues(values:Values, settings:Settings) -> int:
+  sentCount:int = 0
   if settings.mqtts and len(settings.mqtts) > 0:
-    wait:bool = False
     for mqtt in settings.mqtts:
       if sendValues2Mqtt(values, settings.device, mqtt):
-        wait = True
-
-    if wait:
+        sentCount += 1
+    if sentCount > 0:
       time.sleep(5)
+    sentCount = sentCount * 100 / len(settings.mqtts)
   else:
-    dispValues(values)
-
-  return True
+    sentCount = 100
+  return sentCount
 
 def readAndSendValues():
   global settings
