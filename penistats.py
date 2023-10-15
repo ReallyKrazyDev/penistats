@@ -365,7 +365,9 @@ def readAndSendValues():
   global settings
   values:Values = readValues()
   declareValues(settings)
-  sendValues(values, settings)
+  sentPct:int = sendValues(values, settings)
+  if sentPct < 100:
+    print('Values sent to only {0}% of destination(s)'.format(sentPct))
 
 
 #
