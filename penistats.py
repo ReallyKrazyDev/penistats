@@ -36,6 +36,19 @@ from mqtt import *
 #
 
 class Values:
+  TAG_CPU_TEMP_C = 'cpuTempC'
+  TAG_CPU_FREQ_GHZ = 'cpuFreqGHz'
+  TAG_CPU_LOAD_AVG_1MN_PCT = 'cpuLoadAvg1MnPct'
+  TAG_CPU_LOAD_AVG_5MN_PCT = 'cpuLoadAvg5MnPct'
+  TAG_CPU_LOAD_AVG_10MN_PCT = 'cpuLoadAvg10MnPct'
+  TAG_MEM_TOTAL_KB = 'memTotalKB'
+  TAG_MEM_FREE_KB = 'memFreeKB'
+  TAG_MEM_FREE_PCT = 'memFreePct'
+  TAG_MEM_AVAIL_KB = 'memAvailKB'
+  TAG_SWAP_TOTAL_KB = 'swapTotalKB'
+  TAG_SWAP_FREE_KB = 'swapFreeKB'
+  TAG_SWAP_FREE_PCT = 'swapFreePct'
+
   def __init__(self, ):
     self.cpuTempC:float = None
     self.cpuFreqGHz:float = None
@@ -53,29 +66,29 @@ class Values:
   def toDict(self):
     res:dict = {}
     if self.cpuTempC is not None:
-      res['cpuTempC'] = self.cpuTempC
+      res[Values.TAG_CPU_TEMP_C] = self.cpuTempC
     if self.cpuFreqGHz is not None:
-      res['cpuFreqGHz'] = self.cpuFreqGHz
+      res[Values.TAG_CPU_FREQ_GHZ] = self.cpuFreqGHz
     if self.cpuLoadAvg1MnPct is not None:
-      res['cpuLoadAvg1MnPct'] = self.cpuLoadAvg1MnPct
+      res[Values.TAG_CPU_LOAD_AVG_1MN_PCT] = self.cpuLoadAvg1MnPct
     if self.cpuLoadAvg5MnPct is not None:
-      res['cpuLoadAvg5MnPct'] = self.cpuLoadAvg5MnPct
+      res[Values.TAG_CPU_LOAD_AVG_5MN_PCT] = self.cpuLoadAvg5MnPct
     if self.cpuLoadAvg10MnPct is not None:
-      res['cpuLoadAvg10MnPct'] = self.cpuLoadAvg10MnPct
+      res[Values.TAG_CPU_LOAD_AVG_10MN_PCT] = self.cpuLoadAvg10MnPct
     if self.memTotalKB is not None:
-      res['memTotalKB'] = self.memTotalKB
+      res[Values.TAG_MEM_TOTAL_KB] = self.memTotalKB
     if self.memFreeKB is not None:
-      res['memFreeKB'] = self.memFreeKB
+      res[Values.TAG_MEM_FREE_KB] = self.memFreeKB
     if self.memFreePct is not None:
-      res['memFreePct'] = self.memFreePct
+      res[Values.TAG_MEM_FREE_PCT] = self.memFreePct
     if self.memAvailKB is not None:
-      res['memAvailKB'] = self.memAvailKB
+      res[Values.TAG_MEM_AVAIL_KB] = self.memAvailKB
     if self.swapTotalKB is not None:
-      res['swapTotalKB'] = self.swapTotalKB
+      res[Values.TAG_SWAP_TOTAL_KB] = self.swapTotalKB
     if self.swapFreeKB is not None:
-      res['swapFreeKB'] = self.swapFreeKB
+      res[Values.TAG_SWAP_FREE_KB] = self.swapFreeKB
     if self.swapFreePct is not None:
-      res['swapFreePct'] = self.swapFreePct
+      res[Values.TAG_SWAP_FREE_PCT] = self.swapFreePct
     return res
 
 class ScheduleEverySettings:
@@ -323,24 +336,26 @@ def declareValues(settings:Settings) -> bool:
   if declareTstamp is not None and ( time.time() - declareTstamp ) <= 12*3600:
     return False
 
-  declareValues:[DeclareValue] = []
-  declareValues.append(DeclareValue('cpu temperature', '°C', 'cpuTempC'))
-  declareValues.append(DeclareValue('cpu frequency', 'GHz', 'cpuFreqGHz'))
-  declareValues.append(DeclareValue('cpu load average 1mn', '%', 'cpuLoadAvg1MnPct'))
-  declareValues.append(DeclareValue('cpu load average 5mn', '%', 'cpuLoadAvg5MnPct'))
-  declareValues.append(DeclareValue('cpu load average 10mn', '%', 'cpuLoadAvg10MnPct'))
-  declareValues.append(DeclareValue('memory total', 'kB', 'memTotalKB'))
-  declareValues.append(DeclareValue('memory free', 'kB', 'memFreeKB'))
-  declareValues.append(DeclareValue('memory free (%)', '%', 'memFreePct'))
-  declareValues.append(DeclareValue('memory available', 'kB', 'memAvailKB'))
-  declareValues.append(DeclareValue('swap total', 'kB', 'swapTotalKB'))
-  declareValues.append(DeclareValue('swap free', 'kB', 'swapFreeKB'))
-  declareValues.append(DeclareValue('swap free (%)', '%', 'swapFreePct'))
-
   wait:bool = False
-  for mqtt in settings.mqtts:
-    if declareValues2Mqtt(settings.device, mqtt, declareValues):
-      wait = True
+
+  if settings.mqtts is not None and len(settings.mqtts) <=0:
+    declareValues:[DeclareValue] = []
+    declareValues.append(DeclareValue('cpu temperature', '°C', Values.TAG_CPU_TEMP_C))
+    declareValues.append(DeclareValue('cpu frequency', 'GHz', Values.TAG_CPU_FREQ_GHZ))
+    declareValues.append(DeclareValue('cpu load average 1mn', '%', Values.TAG_CPU_LOAD_AVG_1MN_PCT))
+    declareValues.append(DeclareValue('cpu load average 5mn', '%', Values.TAG_CPU_LOAD_AVG_5MN_PCT))
+    declareValues.append(DeclareValue('cpu load average 10mn', '%', Values.TAG_CPU_LOAD_AVG_10MN_PCT))
+    declareValues.append(DeclareValue('memory total', 'kB', Values.TAG_MEM_TOTAL_KB))
+    declareValues.append(DeclareValue('memory free', 'kB', Values.TAG_MEM_FREE_KB))
+    declareValues.append(DeclareValue('memory free (%)', '%', Values.TAG_MEM_FREE_PCT))
+    declareValues.append(DeclareValue('memory available', 'kB', Values.TAG_MEM_AVAIL_KB))
+    declareValues.append(DeclareValue('swap total', 'kB', Values.TAG_SWAP_TOTAL_KB))
+    declareValues.append(DeclareValue('swap free', 'kB', Values.TAG_SWAP_FREE_KB))
+    declareValues.append(DeclareValue('swap free (%)', '%', Values.TAG_SWAP_FREE_PCT))
+
+    for mqtt in settings.mqtts:
+      if declareValues2Mqtt(settings.device, mqtt, declareValues):
+        wait = True
 
   declareTstamp = time.time()
   if wait:
@@ -375,12 +390,12 @@ def readAndSendValues():
 #
 
 argParser = argparse.ArgumentParser(prog='penistats', description='Penguin Stats')
-argParser.add_argument('--set', default='penistats.conf', help='settings file path')
+argParser.add_argument('-s', '--set', default='penistats.conf', help='settings file path')
 args = argParser.parse_args()
 
 declareTstamp:int = None
 
-settings:Settings = readSettings(args.set if args.set is not None else 'penistats.conf')
+settings:Settings = readSettings(args.set if not isStringEmpty(args.set) else 'penistats.conf')
 fixSettings(settings)
 
 if settings is not None and settings.isSet():
