@@ -338,7 +338,7 @@ def declareValues(settings:Settings) -> bool:
 
   wait:bool = False
 
-  if settings.mqtts is not None and len(settings.mqtts) <=0:
+  if settings.mqtts is not None and len(settings.mqtts) > 0:
     declareValues:[DeclareValue] = []
     declareValues.append(DeclareValue('cpu temperature', '°C', Values.TAG_CPU_TEMP_C))
     declareValues.append(DeclareValue('cpu frequency', 'GHz', Values.TAG_CPU_FREQ_GHZ))
